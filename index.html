@@ -156,7 +156,13 @@ select{
   background:var(--panel);border:1px solid var(--panel-line);color:var(--text);
   padding:8px 12px;border-radius:10px;font-size:13px;font-family:inherit;cursor:pointer;outline:none
 }
-select option{background:#182042}
+select option{background:#182042;color:#e8ecff}
+/* 分组标签（键位基础/英文练习…）默认在部分浏览器是白底黑字，太刺眼，统一压暗 */
+select optgroup{
+  background:#0f142c;color:#8f9ac0;font-style:normal;font-weight:600;
+  font-size:12px;padding:4px 6px
+}
+select optgroup option{background:#182042;color:#e8ecff;font-weight:400;font-size:13px}
 .practice-wrap{
   flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;
   border:1px solid var(--panel-line);border-radius:18px;padding:22px;
@@ -378,6 +384,12 @@ body.touch.on-home #mobileFab{display:none}
   box-shadow:0 0 0 2px rgba(110,168,255,.55),inset 0 -3px 0 var(--accent)
 }
 
+/* 中文练习：只保留虚拟键盘作为键位参考，不做任何按键高亮 */
+body.zh-mode #keyboard::before{
+  content:"↓ 键盘仅作键位参考（中文请用输入法打字）";
+  display:block;text-align:center;font-size:11px;color:var(--muted);
+  margin-bottom:2px;letter-spacing:.3px
+}
 @media (max-width:900px){
   #keyboard{display:none}
   #typingText{font-size:19px}
@@ -486,15 +498,28 @@ body.touch.on-home #mobileFab{display:none}
     <section class="screen" id="screen-practice">
       <div class="panelbar">
         <select id="textSet">
-          <option value="home">基准键位练习（asdf / jkl;）</option>
-          <option value="toprow">上排键位练习（qwer / uiop）</option>
-          <option value="bottom">下排键位练习（zxcv / bnm,）</option>
-          <option value="numbers">数字键位练习</option>
-          <option value="symbols">符号与大写（Shift 练习）</option>
-          <option value="words" selected>常用英文单词</option>
-          <option value="code">编程代码片段</option>
-          <option value="essay">英文短文（耐力）</option>
-          <option value="chinese">中文短句（拼音输入练习）</option>
+          <optgroup label="键位基础">
+            <option value="home">基准键位（asdf / jkl;）</option>
+            <option value="toprow">上排键位（qwer / uiop）</option>
+            <option value="bottom">下排键位（zxcv / bnm,）</option>
+            <option value="numbers">数字键位</option>
+            <option value="symbols">符号与大写（Shift 练习）</option>
+          </optgroup>
+          <optgroup label="英文练习">
+            <option value="words" selected>常用英文单词</option>
+            <option value="quote">英文短句格言</option>
+            <option value="essay">英文短文（耐力）</option>
+            <option value="code">编程代码片段</option>
+          </optgroup>
+          <optgroup label="中文练习">
+            <option value="chinese">中文短句（日常）</option>
+            <option value="poem">中文古诗</option>
+            <option value="idiom">中文成语 / 谚语</option>
+            <option value="chinese_long">中文短文（耐力）</option>
+          </optgroup>
+          <optgroup label="综合">
+            <option value="mixed">中英混合</option>
+          </optgroup>
         </select>
         <button class="btn" id="btnNewText">换一段</button>
         <button class="btn ghost" id="btnRestartText">重新开始</button>
@@ -747,6 +772,7 @@ const Store = {
 };
 
 /* ---------------- 语料库 ---------------- */
+
 const WORDS_COMMON = ('the of and to in is you that it he was for on are as with his they at be this have from or one had by word ' +
   'but not what all were we when your can said there use an each which she do how their if will up other about out many then them ' +
   'these so some her would make like him into time has look two more write go see number no way could people my than first water been ' +
@@ -769,41 +795,60 @@ const TEXT_SETS = {
     'ff jj ff jj dd kk dd kk ss ll ss ll aa ;; aa ;; fdsa jkl;',
     'ask fall salad flask glad half hall lads fall ask alas dad;',
     'a sad lad; a fall; ask a lad; all flash; a lad asks;',
-    'jkl; asdf jkl; asdf fj fj dk dk sl sl a; a; fdsa ;lkj'
+    'jkl; asdf jkl; asdf fj fj dk dk sl sl a; a; fdsa ;lkj',
+    'as aa ad af ja ka la sa da fa alla adds falls salad flask',
+    'dad had a flask; a lass asks a lad; fads fall; all glad',
+    'ff jj dk dk sl sl a; a; fj fj dk dk asdf jkl; fdsa ;lkj'
   ],
   toprow: [
     'qwer uiop qwer uiop qq ww ee rr uu ii oo pp qwer uiop',
     'we to type your power quiet rope top pour trip wire quit',
     'out our you write tower poet route pretty puppy torque',
     'q p q p w o w o e i e i r u r u t y t y we up or it type',
-    'quiet power tower pretty output retire poetry request'
+    'quiet power tower pretty output retire poetry request',
+    'tip top pot trip troop trout trowel prowl proud quote',
+    'you pour our pure joy; we require quiet; type it twice',
+    'er er ui ui op op qw qw io io re re pu pu try out our'
   ],
   bottom: [
     'zxcv bnm, zxcv bnm, zz xx cc vv bb nn mm ,, .. // zxcv bnm,',
     'z x c v b n m , . / zxcv bnm, zxcv bnm, zz bb nn mm .. //',
     'cab van mix box zoom none come back move bank civic numb',
     'zxcv bnm, zxcv bnm, zz xx cc vv bb nn mm ,, .. //',
-    'move back; come in; zoom by; mix a box; none can vex me.'
+    'move back; come in; zoom by; mix a box; none can vex me.',
+    'zoo cave bacon novel maximum vacancy combine movement',
+    'vex no man; can a cat zoom in; move a box; come back, Max'
   ],
   numbers: [
     '1234567890 0987654321 13579 24680 1029 3847 5610 9182',
     '1 2 3 4 5 6 7 8 9 0 0 9 8 7 6 5 4 3 2 1 12 34 56 78 90',
     '1984 2026 3.14 1024 256 512 7788 9012 4455 6677 1234 5678',
-    'the 3 little 7 pigs ate 12 apples in 45 minutes on day 6'
+    'the 3 little 7 pigs ate 12 apples in 45 minutes on day 6',
+    '11 22 33 44 55 66 77 88 99 00 121 232 343 454 565 676 787',
+    'Order 42 shipped on 2026-03-15 with 3 boxes of 25 items.',
+    'Phone 138 0013 8000; room 1208; floor 15; price 678.90'
   ],
   symbols: [
     'Hello World! How Are You? I Am Fine, Thanks. (Really?)',
     'Name: Tom; Age: 25; Score: 98% — "Great Job!" #1 @home',
     'if (x > 0) { return x * 2; } else { return -x; }',
     'Email: user@example.com; Price: $19.99 & $24.50 (50% Off)',
-    'The Quick Brown Fox Jumps Over The Lazy Dog! 1234567890'
+    'The Quick Brown Fox Jumps Over The Lazy Dog! 1234567890',
+    'Paths: C:\\Users\\Me\\Docs; URLs: https://a.com/b?x=1&y=2',
+    'Marks: #hash @at %pct ^caret *star ~tilde `tick |pipe',
+    'Brackets: [square] {curly} (round) <angle> and "quotes"'
   ],
   words: [
     'the quick brown fox jumps over the lazy dog while typing practice makes perfect every single day',
     'keep your eyes on the screen not the keyboard and let your fingers learn the rhythm of each key',
     'a steady hand and a calm mind will always beat a fast but careless one so slow down and be exact',
     'practice does not make perfect only perfect practice makes perfect so focus on accuracy first',
-    'learning to type without looking is a skill like riding a bike once you get it you never forget'
+    'learning to type without looking is a skill like riding a bike once you get it you never forget',
+    'small daily habits quietly compound into large results if you simply refuse to skip a day',
+    'the best time to plant a tree was twenty years ago the second best time is right now today',
+    'slow is smooth and smooth is fast so keep your hands relaxed and your eyes on the goal',
+    'every expert was once a beginner who refused to give up when progress felt invisible',
+    'good posture a light touch and short breaks will protect your wrists for years to come'
   ],
   code: [
     'const sum = arr.reduce((a, b) => a + b, 0);',
@@ -813,11 +858,19 @@ const TEXT_SETS = {
     'class Node { constructor(val) { this.val = val; this.next = null; } }',
     'document.querySelectorAll(".item").forEach(el => el.remove());',
     'const { data, error } = await fetch(url).then(r => r.json());',
-    'try { risky(); } catch (e) { console.error(e.message); } finally { cleanup(); }'
+    'try { risky(); } catch (e) { console.error(e.message); } finally { cleanup(); }',
+    'export default function App() { return <div className="app" />; }',
+    'const ids = items.filter(x => x.ok).map(x => x.id);',
+    'while (queue.length) { const job = queue.shift(); await run(job); }',
+    'SELECT id, name FROM users WHERE age >= 18 ORDER BY name;',
+    'git commit -m "fix: correct the off-by-one error in loop";',
+    'def total(xs): return sum(x for x in xs if x > 0)'
   ],
   essay: [
     'The art of typing well is less about speed than about trust. When your fingers know where the keys are, your mind is free to think about the words themselves. Beginners often stare at the keyboard, hunting for each letter, and their thoughts arrive faster than their hands can move. The cure is patience. Sit up straight, rest your fingers on the home row, and let each finger own its own territory. Accuracy comes first, and speed follows quietly behind it.',
-    'Every skill worth having is built out of small, boring repetitions. Nobody remembers the thousandth time they pressed an ordinary key, yet that thousandth press is exactly what makes the ten thousandth feel effortless. So do not chase a number on a screen. Chase the feeling of a clean, unhurried rhythm, and the number will take care of itself.'
+    'Every skill worth having is built out of small, boring repetitions. Nobody remembers the thousandth time they pressed an ordinary key, yet that thousandth press is exactly what makes the ten thousandth feel effortless. So do not chase a number on a screen. Chase the feeling of a clean, unhurried rhythm, and the number will take care of itself.',
+    'There is a quiet pleasure in doing something well. It shows up late, after the novelty has worn off, when the work has become ordinary and your hands have stopped negotiating with your intentions. You stop translating ideas into movements and simply move. That is what practice buys you: not talent, not magic, just the disappearance of friction between wanting to say something and having said it.',
+    'A good workspace matters more than most people admit. The screen should sit slightly below eye level, your elbows near ninety degrees, your wrists floating rather than resting on the desk edge. Keep a glass of water nearby and stand up every half hour. None of this will make you faster today, but it will keep you typing for decades instead of months.'
   ],
   chinese: [
     '熟能生巧，打字也是一样，慢慢来比较快。',
@@ -835,9 +888,83 @@ const TEXT_SETS = {
     '如果觉得累了，就休息一下再继续练习。',
     '盲打并不难，难的是改掉看键盘的习惯。',
     '今天的努力，会在一个月后变成你的实力。',
-    '多打几遍，你就会发现自己的手变快了。'
+    '多打几遍，你就会发现自己的手变快了。',
+    '不要追求一次就完美，允许自己慢慢进步。',
+    '把大目标拆成小步骤，完成一个再想下一个。',
+    '输入法会记住你常用的词，越用越顺手。',
+    '错了就退格重打，不要蒙着头往下冲。',
+    '注意力集中在屏幕上的字，不要想别的事情。',
+    '每天固定时间练习，比想起来才练有效得多。',
+    '先练准，再练快，顺序反了会走很多弯路。',
+    '身体放松一点，肩膀不要耸起来打字。',
+    '给自己定一个小目标，比如今天正确率九成五。',
+    '耐心是所有技能里最容易被低估的一项。',
+    '打字快不快，取决于你有多熟悉键位。',
+    '不要和别人比速度，只和昨天的自己比。'
+  ],
+  poem: [
+    '床前明月光，疑是地上霜。举头望明月，低头思故乡。',
+    '春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。',
+    '白日依山尽，黄河入海流。欲穷千里目，更上一层楼。',
+    '红豆生南国，春来发几枝。愿君多采撷，此物最相思。',
+    '锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。',
+    '千山鸟飞绝，万径人踪灭。孤舟蓑笠翁，独钓寒江雪。',
+    '鹅鹅鹅，曲项向天歌。白毛浮绿水，红掌拨清波。',
+    '慈母手中线，游子身上衣。临行密密缝，意恐迟迟归。',
+    '日照香炉生紫烟，遥看瀑布挂前川。飞流直下三千尺，疑是银河落九天。',
+    '朝辞白帝彩云间，千里江陵一日还。两岸猿声啼不住，轻舟已过万重山。',
+    '远上寒山石径斜，白云生处有人家。停车坐爱枫林晚，霜叶红于二月花。',
+    '爆竹声中一岁除，春风送暖入屠苏。千门万户曈曈日，总把新桃换旧符。',
+    '两个黄鹂鸣翠柳，一行白鹭上青天。窗含西岭千秋雪，门泊东吴万里船。',
+    '京口瓜洲一水间，钟山只隔数重山。春风又绿江南岸，明月何时照我还。',
+    '天街小雨润如酥，草色遥看近却无。最是一年春好处，绝胜烟柳满皇都。',
+    '独在异乡为异客，每逢佳节倍思亲。遥知兄弟登高处，遍插茱萸少一人。'
+  ],
+  idiom: [
+    '熟能生巧 精益求精 持之以恒 锲而不舍 专心致志 一丝不苟',
+    '脚踏实地 循序渐进 温故知新 学以致用 融会贯通 举一反三',
+    '心平气和 全神贯注 日积月累 水滴石穿 铁杵成针 勤能补拙',
+    '手到擒来 得心应手 游刃有余 炉火纯青 出神入化 信手拈来',
+    '静下心来，从善如流，积少成多，厚积薄发。',
+    '工欲善其事，必先利其器。不积跬步，无以至千里。',
+    '只要功夫深，铁杵磨成针。世上无难事，只怕有心人。',
+    '书香门第 博览群书 出口成章 妙笔生花 下笔如神',
+    '万事开头难，贵在坚持，功到自然成。',
+    '三人行，必有我师焉。择其善者而从之。'
+  ],
+  chinese_long: [
+    '学习打字最有效的方法，不是一次练上三个小时，而是每天坚持十五分钟。人的手指记住键位，靠的是反复而不过量的重复。练得太久，注意力下降，错误反而会变多，错误一旦被重复，就会被身体当成正确的动作记下来，之后想改就更难了。',
+    '很多人以为打字快的人是因为手指灵活，其实更重要的原因是他们不需要思考键在哪里。当找键这个动作从大脑里消失以后，剩下的就只是把想到的字打出来。这个过程需要时间，但只要每天练习，几乎每个人都能做到。',
+    '盲打的关键在于不要看键盘。刚开始不看键盘会很不习惯，速度也会明显下降，这是正常的。这个时候如果偷偷看一眼，速度会立刻回升，但那种回升是假的，因为你又回到了依赖视觉的状态。忍住不看，坚持两三个星期，手指就会自己找到位置。',
+    '练打字要有一个明确的目标。目标不要定得太高，比如要求自己一个月之内每分钟打一百个字，这样的目标容易让人急躁。更好的做法是把目标放在正确率上，先要求自己百分之九十五以上不出错，等这个标准稳定了，速度自然会上来。',
+    '错误的练习比不练习更糟。如果每次打错都不管，继续往下打，那么手指记住的就是错误的动作。正确的做法是慢下来，打错了就退格重打一遍，让手指重新走一遍正确的路径。慢一点没有关系，重要的是每一次动作都是对的。'
+  ],
+  quote: [
+    'The only way to do great work is to love what you do.',
+    'Simplicity is the ultimate sophistication in both design and life.',
+    'We are what we repeatedly do so excellence is a habit not an act.',
+    'It always seems impossible until it is finally done by someone.',
+    'The journey of a thousand miles begins with a single step forward.',
+    'Talk is cheap but showing your work speaks louder than any words.',
+    'A smooth sea never made a skilled sailor so welcome the rough days.',
+    'Do not wait for the perfect moment take the moment and make it perfect.',
+    'Success is the sum of small efforts repeated day in and day out.',
+    'The expert in anything was once a beginner who kept on going.'
+  ],
+  mixed: [
+    '把 keyboard 放在手边，每天 practice 十五分钟。',
+    '练习 blind typing 的时候，眼睛要看 screen。',
+    '准确率 accuracy 比速度 speed 更重要。',
+    '先把 home row 练熟，再练 upper row 和 lower row。',
+    '每天进步一点点，keep going 就会有收获。',
+    'WPM 是 words per minute 的缩写，意思是每分钟单词数。',
+    '遇到不会的键，slow down，别急着往下打。',
+    'Practice makes perfect，熟能生巧。'
   ]
 };
+
+/* 哪些分类属于中文（用输入法打字、按字/分钟计速） */
+const ZH_SETS = new Set(['chinese', 'poem', 'idiom', 'chinese_long']);
 
 /* ---------------- 全局界面控制 ---------------- */
 let currentScreen = 'home';
@@ -1256,8 +1383,8 @@ const Practice = {
     this.newText();
   },
 
-  /** 中文模式：一个字 = 一个「词」，速度用 字/分钟 衡量 */
-  isZh() { return this.set === 'chinese'; },
+  /** 中文分类：用输入法打字，速度按「字/分钟」计 */
+  isZh() { return ZH_SETS.has(this.set); },
 
   newText() {
     const pool = TEXT_SETS[this.set] || TEXT_SETS.words;
@@ -1275,6 +1402,7 @@ const Practice = {
   render() {
     const box = $('#typingText');
     box.classList.toggle('zh', this.isZh());
+    document.body.classList.toggle('zh-mode', this.isZh());
     this.spans = [];
     box.innerHTML = '';
     const frag = document.createDocumentFragment();
@@ -1290,11 +1418,11 @@ const Practice = {
     box.appendChild(frag);
     // 中文模式：更新顶部提示语与统计口径
     $('#practiceTip').innerHTML = this.isZh()
-      ? '用输入法打出这些句子 · 速度按 <b>字/分钟</b> 计算'
+      ? '用输入法打出这些句子 · 速度按 <b>字/分钟</b> · 下方键盘仅作键位参考'
       : '支持退格修正 · <span class="kbd-hint">Tab</span> 快速重开';
     this.updateCursor();
     this.hintNext();
-    // 中文模式必须隐藏虚拟键盘（它无法提示汉字），并由输入框接管输入
+    // 中文模式由隐藏输入框接管输入（IME 需要），同时保持虚拟键盘可见
     if (typeof Input !== 'undefined' && Input.el) Input.sync();
   },
 
@@ -1317,8 +1445,11 @@ const Practice = {
     }
   },
 
+  /** 中文模式：只显示键盘作为键位参考，不做任何按键高亮。
+      原因：中文靠输入法出字，拼音是整词连续敲的，逐字母高亮容易与实际
+      输入法行为不一致（不同输入法的组合事件差异很大），反而干扰。
+      英文模式仍然逐字符高亮。 */
   hintNext() {
-    // 中文模式无法用「某个键」提示，隐藏键盘高亮
     if (this.isZh()) { kbNext(null); return; }
     const ch = this.text[this.idx];
     if (ch == null || ch === '\n') { kbNext(null); return; }
@@ -1633,9 +1764,9 @@ const Input = {
     } else {
       this.blur();
     }
-    // 中文练习时物理键盘指法提示无意义，隐藏虚拟键盘
-    const hideKb = (currentScreen === 'practice' && Practice.isZh()) ||
-                   (currentScreen === 'practice' && this.touch);
+    // 中文练习也显示虚拟键盘：拼音是敲字母键，键盘上的指法分区与首字母高亮
+    // 对建立键位记忆同样有用。（手机端因为键盘挡住屏幕仍隐藏）
+    const hideKb = (currentScreen === 'practice' && this.touch);
     $('#keyboard').style.display = (!Store.data.kb || hideKb) ? 'none' : '';
     this.updateKb();
     // 浮动按钮随界面切换显示内容
@@ -1650,6 +1781,7 @@ const Input = {
 
   showPreview(text) {
     if (currentScreen !== 'practice') return;
+    // 只显示拼音预览（跟随光标的小标签），不做键盘高亮
     Practice.setInlinePreview(text || '');
   },
 };
