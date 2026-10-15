@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content, viewport-fit=cover">
 <title>键盘打字大冒险 · Typing Adventure</title>
 <style>
 /* ===================== 基础与主题 ===================== */
@@ -241,19 +241,68 @@ select option{background:#182042}
 /* ===================== 手机 / 触屏支持 ===================== */
 /* 隐藏输入框：用于唤起手机软键盘，并承接输入法(IME)组合事件 */
 #mobileInput{
-  position:fixed;left:50%;bottom:6px;width:2px;height:2px;opacity:0;
+  position:fixed;left:50%;bottom:2px;width:2px;height:2px;opacity:0;
   border:0;padding:0;margin:0;background:transparent;color:transparent;
   font-size:16px;                 /* 16px 可避免 iOS 聚焦时自动放大页面 */
   z-index:-1;pointer-events:none;
 }
-body.touch #app{height:var(--appH,100vh);padding-bottom:78px}
-body.touch.kb-open #app{padding-bottom:8px}
-body.touch main{min-height:0}
 
-/* 手机底部「唤起键盘」提示条 */
+/* 手机端整体布局：
+   用 100dvh（动态视口高度）+ viewport 的 interactive-widget=resizes-content，
+   让软键盘弹出时可视区真正收缩，内容随之压缩而不是被盖住。
+   旧浏览器不支持 dvh 时回退到 --appH 或 100vh。 */
+body.touch #app{
+  height:var(--appH, 100dvh);
+  padding:8px 8px 0;
+  gap:8px;
+  overflow:hidden;
+}
+body.touch main{min-height:0;overflow:hidden}
+
+/* ---- 手机端「紧凑头部」：第一行 = 图标 + 4个标签；第二行 = HUD 横滑 ---- */
+body.touch header{gap:6px;align-items:center;flex-wrap:wrap;row-gap:4px;overflow:hidden}
+body.touch .logo{flex:0 0 auto;font-size:0}   /* 只保留图标，省宽度 */
+body.touch .logo .mark{width:26px;height:26px;font-size:14px;border-radius:8px}
+body.touch .logo small{display:none}
+body.touch .tabs{padding:3px;border-radius:10px;flex:1 1 auto;min-width:0;order:2}
+body.touch .tabs button{padding:6px 4px;font-size:11.5px;flex:1 1 0;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 右侧两个图标按钮紧跟 logo，避免被 tabs 挤到下一行 */
+body.touch .icon-btn{order:1;width:28px;height:28px;font-size:12px;border-radius:8px;flex:0 0 auto}
+body.touch .spacer{display:none}
+/* HUD 独占第二行，横向可滑动，绝不换行撑高头部 */
+body.touch .hud{
+  order:9;flex:1 1 100%;width:100%;
+  gap:5px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:1px
+}
+body.touch .hud::-webkit-scrollbar{display:none}
+body.touch .chip{padding:4px 8px;font-size:11px;border-radius:8px;flex:0 0 auto}
+body.touch .chip b{font-size:13px}
+body.touch .panelbar{gap:6px}
+body.touch .panelbar select{padding:7px 8px;font-size:12px;flex:1 1 auto;min-width:0}
+body.touch .panelbar > span{display:none}      /* 手机端隐藏「提示：…」长文字 */
+body.touch .btn{padding:9px 14px;font-size:13px}
+body.touch .practice-wrap{padding:12px}
+
+/* ---- 键盘弹出 / 游戏进行中：只留游戏区 + 一个浮动按钮 ---- */
+body.touch.kb-open header,
+body.touch.kb-open .panelbar,
+body.touch.kb-open #mobileBar{display:none}
+
+body.touch.kb-open #app{padding-top:6px}
+body.touch.kb-open main{flex:1 1 auto}
+body.touch.kb-open .practice-wrap{padding:10px}
+body.touch.kb-open #typingText{font-size:20px;line-height:1.85}
+body.touch.kb-open #typingText.zh{font-size:22px;letter-spacing:1.5px}
+body.touch.kb-open #arena{border-radius:12px}
+body.touch.kb-open .falling{font-size:20px}
+body.touch.kb-open .falling.word{font-size:17px}
+
+/* ---- 手机底部「唤起键盘」提示条（未弹出键盘时显示） ---- */
 #mobileBar{
   display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;
-  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+  padding:11px 14px calc(11px + env(safe-area-inset-bottom));
   background:linear-gradient(0deg,rgba(8,12,26,.98),rgba(8,12,26,.9));
   border-top:1px solid var(--panel-line);
   text-align:center;font-size:14px;color:var(--text);cursor:pointer
@@ -262,6 +311,42 @@ body.touch #mobileBar{display:block}
 body.touch.kb-open #mobileBar{display:none}
 #mobileBar b{color:var(--accent)}
 #mobileBar small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+
+/* ---- 手机浮动快捷键 ----
+   注意：position:fixed 的 bottom 是相对「布局视口」的，键盘弹出时布局视口往往不变，
+   按钮会掉到键盘下面。所以用 JS 传来的 --appH（可视区高度）来定位。 */
+#mobileFab{
+  display:none;position:fixed;right:8px;z-index:60;
+  bottom:calc(74px + env(safe-area-inset-bottom));
+  gap:6px;flex-direction:column;align-items:flex-end
+}
+body.touch #mobileFab{display:flex}
+#mobileFab button{
+  padding:7px 11px;font-size:12px;font-weight:600;
+  border-radius:10px;border:1px solid var(--panel-line);
+  background:rgba(18,24,48,.9);color:var(--text);cursor:pointer;
+  backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.45);white-space:nowrap
+}
+#mobileFab button:active{transform:scale(.96)}
+/* 键盘弹出后：按钮贴到可视区底部。
+   --kbCover 由 JS 写入（被键盘遮挡的高度），这样即使 fixed 的参照系是布局视口，
+   按钮也会被抬到键盘上方。
+   默认半透明，避免遮挡下落字符；点击时恢复不透明。 */
+body.touch.kb-open #mobileFab{
+  bottom:calc(var(--kbCover, 0px) + 10px + env(safe-area-inset-bottom))
+}
+body.touch.kb-open #mobileFab button{
+  padding:5px 9px;font-size:11px;opacity:.55;background:rgba(14,18,38,.8);
+  transition:opacity .18s
+}
+body.touch.kb-open #mobileFab button:active{opacity:1}
+/* 街机游戏进行中：只留「收起键盘」，且高度透明，尽量不挡字符 */
+body.touch.kb-open #mobileFab.playing #fabPause,
+body.touch.kb-open #mobileFab.playing #fabNext{display:none}
+body.touch.kb-open #mobileFab.playing #fabKeyboard{opacity:.45}
+/* 首页不显示 */
+body.touch.on-home #mobileFab{display:none}
+
 
 /* 中文练习：字与字之间留出更清楚的间隙 */
 #typingText.zh{font-size:26px;letter-spacing:3px;line-height:2.2}
@@ -368,6 +453,7 @@ body.touch.kb-open #mobileBar{display:none}
       <div class="panelbar">
         <select id="arcadeMode">
           <option value="letter">🔤 字母雨（入门）</option>
+          <option value="alpha">🅰️ 纯字母（无数字）</option>
           <option value="home">🏠 基准键位（asdf jkl;）</option>
           <option value="word">📝 单词雨（进阶）</option>
           <option value="mix">🌀 混合模式（挑战）</option>
@@ -468,12 +554,17 @@ body.touch.kb-open #mobileBar{display:none}
 
   <div id="keyboard"></div>
 
-  <!-- 手机：隐藏输入框 + 唤起键盘提示条 -->
+  <!-- 手机：隐藏输入框 + 唤起键盘提示条 + 浮动快捷键 -->
   <input id="mobileInput" type="text" autocomplete="off" autocorrect="off"
          autocapitalize="off" spellcheck="false" aria-label="打字输入">
   <div id="mobileBar">
     <b>👆 点这里唤起键盘</b>
     <small>手机端使用屏幕键盘输入 · 建议用电脑练指法</small>
+  </div>
+  <div id="mobileFab">
+    <button id="fabKeyboard" type="button">⌨️ 键盘</button>
+    <button id="fabPause" type="button">⏸ 暂停</button>
+    <button id="fabNext" type="button">🔀 换一段</button>
   </div>
 </div>
 
@@ -890,14 +981,17 @@ const Arcade = {
   pickText() {
     const m = this.mode;
     const homeKeys = 'asdfjkl;';
+    const AZ = 'abcdefghijklmnopqrstuvwxyz';
     if (m === 'home') return pick(homeKeys.split(''));
+    // 纯字母：只出 a-z，不含数字，适合刚学键位、还不想被数字键打断的人
+    if (m === 'alpha') return pick(AZ.split(''));
     if (m === 'letter') return Math.random() < 0.75
-      ? pick('abcdefghijklmnopqrstuvwxyz'.split(''))
+      ? pick(AZ.split(''))
       : pick('1234567890'.split(''));
     if (m === 'word') return pick(WORDS_COMMON);
     // mix
     const r = Math.random();
-    if (r < 0.4) return pick('abcdefghijklmnopqrstuvwxyz'.split(''));
+    if (r < 0.4) return pick(AZ.split(''));
     if (r < 0.55) return pick('1234567890'.split(''));
     if (r < 0.8) return pick(WORDS_COMMON.filter(w => w.length <= 4));
     return pick(WORDS_LONG);
@@ -1432,12 +1526,32 @@ const Input = {
       }
     });
 
-    this.el.addEventListener('focus', () => document.body.classList.add('kb-open'));
+    this.el.addEventListener('focus', () => { this.updateKb(); });
     this.el.addEventListener('blur', () => {
-      document.body.classList.remove('kb-open');
+      this.updateKb();
       this.composing = false;
       this.showPreview('');
       if (currentScreen === 'practice') Practice.setComposing(false);
+    });
+
+    // ---- 手机浮动快捷键 ----
+    $('#fabKeyboard').addEventListener('click', e => {
+      e.stopPropagation();
+      if (this.focused) this.blur(); else this.focus();
+    });
+    $('#fabPause').addEventListener('click', e => {
+      e.stopPropagation();
+      this.blur();
+      if (currentScreen === 'arcade') {
+        if (Arcade.running) Arcade.pause();
+        else if (Arcade.paused) Arcade.resume();
+        else Arcade.start();
+      }
+    });
+    $('#fabNext').addEventListener('click', e => {
+      e.stopPropagation();
+      if (currentScreen === 'practice') { Practice.newText(); this.focus(); }
+      else if (currentScreen === 'arcade') { Arcade.start(); }
     });
 
     // ---- 触屏唤起键盘 ----
@@ -1451,17 +1565,51 @@ const Input = {
     $('#screen-practice').addEventListener('pointerup', tap);
     $('#arena').addEventListener('pointerup', tap);
 
-    // 手机键盘弹出后视口变小，通知布局修正
+    // 手机键盘弹出后视口变小：用 visualViewport 精确拿到可视高度，
+    // 让 #app 收缩到「键盘以上」的区域，避免内容被软键盘遮住。
+    //
+    // 注意：部分 Android 浏览器在键盘弹出时并不触发 visualViewport.resize，
+    // 所以这里同时用「输入框获得焦点」作为判定依据（markKb），双保险。
+    const applyViewport = () => {
+      const vv = window.visualViewport;
+      const h = vv ? vv.height : window.innerHeight;
+      document.documentElement.style.setProperty('--appH', Math.round(h) + 'px');
+      if (this.touch && vv) {
+        this.kbByViewport = Math.max(0, window.innerHeight - vv.height) > 120;
+      }
+      // 浮动按钮用 fixed 定位，其 bottom 相对布局视口；键盘弹出时布局视口不变，
+      // 所以这里按「可视区剩余高度」动态换算，保证按钮始终露在键盘上方。
+      const fab = document.querySelector('#mobileFab');
+      if (fab && this.touch) {
+        const covered = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
+        document.documentElement.style.setProperty('--kbCover', Math.round(covered) + 'px');
+      }
+      this.updateKb();
+    };
     if (window.visualViewport) {
       const vv = window.visualViewport;
-      const fix = () => {
-        document.documentElement.style.setProperty('--appH', vv.height + 'px');
-      };
-      vv.addEventListener('resize', fix);
-      vv.addEventListener('scroll', fix);
-      fix();
+      vv.addEventListener('resize', applyViewport);
+      vv.addEventListener('scroll', applyViewport);
     }
+    window.addEventListener('resize', applyViewport);
+    window.addEventListener('orientationchange', () => setTimeout(applyViewport, 250));
+    this.applyViewport = applyViewport;
+    applyViewport();
   },
+
+  /** 键盘状态 = 输入框当前真的持有焦点 或 视口被遮挡。
+      用 document.activeElement 判断而不是缓存标志位，
+      避免初始状态或程序化 blur 后残留导致头部被误隐藏。 */
+  updateKb() {
+    if (!this.touch) { document.body.classList.remove('kb-open'); return; }
+    const isFocused = document.activeElement === this.el;
+    this.focused = isFocused;
+    document.body.classList.toggle('kb-open', isFocused || !!this.kbByViewport);
+    const fb = document.querySelector('#fabKeyboard');
+    if (fb) fb.textContent = isFocused ? '⌨️ 收起键盘' : '⌨️ 键盘';
+  },
+
+  markKb() { this.updateKb(); },
 
   /** 当前是否需要走隐藏输入框（中文必须；触屏一律走） */
   needed() {
@@ -1489,6 +1637,15 @@ const Input = {
     const hideKb = (currentScreen === 'practice' && Practice.isZh()) ||
                    (currentScreen === 'practice' && this.touch);
     $('#keyboard').style.display = (!Store.data.kb || hideKb) ? 'none' : '';
+    this.updateKb();
+    // 浮动按钮随界面切换显示内容
+    const fab = $('#mobileFab');
+    document.body.classList.toggle('on-home', currentScreen === 'home');
+    fab.classList.toggle('playing', currentScreen === 'arcade');
+    $('#fabPause').style.display = currentScreen === 'arcade' ? '' : 'none';
+    $('#fabNext').style.display = (currentScreen === 'practice' || currentScreen === 'arcade') ? '' : 'none';
+    $('#fabNext').textContent = currentScreen === 'arcade' ? '🔁 重开' : '🔀 换一段';
+    $('#fabKeyboard').textContent = this.focused ? '⌨️ 收起键盘' : '⌨️ 键盘';
   },
 
   showPreview(text) {
@@ -1549,6 +1706,10 @@ document.addEventListener('keydown', e => {
   if (currentScreen === 'arcade') {
     if (e.key === 'Enter' && !Arcade.running) { e.preventDefault(); Arcade.running || Arcade.paused ? Arcade.resume() : Arcade.start(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // 手机 / 需要输入框时，按键统一由隐藏输入框的 input 事件处理。
+    // 否则部分 Android 软键盘会同时触发 keydown(body) 和 input(输入框)，
+    // 一次按键被算两次，表现为“打一个字出现重复输入”。
+    if (Input.needed()) return;
     if (e.key.length === 1) { e.preventDefault(); Arcade.onChar(e.key); }
     return;
   }
